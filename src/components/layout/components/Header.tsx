@@ -25,7 +25,6 @@ import NotificationBell from '../NotificationBell';
 import ProfileMenu from './ProfileMenu';
 import MenuItem from './MenuItem';
 import { MenuItem as MenuItemType } from '../config/menuItems';
-import { ThemeToggle } from '../../ThemeToggle';
 
 import logo from '../../../assets/EVO_CRM.png';
 
@@ -186,10 +185,6 @@ export default function Header({
                 </nav>
               </ScrollArea>
 
-              <div className="p-4 border-t border-sidebar-border">
-                <ThemeToggle />
-              </div>
-
               {/* Mobile User Menu */}
               <ProfileMenu
                 user={user}
@@ -277,8 +272,6 @@ export default function Header({
 
         {/* Right side */}
         <div className="flex items-center gap-2 px-4">
-          {/* Theme Toggle */}
-          <ThemeToggle />
           {/* Notifications */}
           <NotificationBell />
           {/* User Menu */}
