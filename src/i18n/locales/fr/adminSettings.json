@@ -7,7 +7,8 @@
     "socialLogin": "Connexion Sociale",
     "channels": "Canaux",
     "openai": "OpenAI",
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "inboundEmail": "E-mail Entrant"
   },
   "email": {
     "title": "Configuration E-mail",
@@ -389,5 +390,41 @@
     "messages": {
       "loadError": "Echec du chargement de la configuration des integrations"
     }
+  },
+  "inboundEmail": {
+    "title": "Configuration E-mail Entrant",
+    "description": "Configurez le fournisseur de messagerie entrante et les identifiants utilises pour recevoir et traiter les e-mails entrants.",
+    "provider": {
+      "label": "Service d'E-mail Entrant",
+      "relay": "Relay (Exim / Postfix / Qmail)",
+      "mailgun": "Mailgun",
+      "mandrill": "Mandrill",
+      "sendgrid": "SendGrid"
+    },
+    "fields": {
+      "password": "Mot de passe d'ingestion",
+      "domain": "Domaine d'E-mail Entrant",
+      "mailgunSigningKey": "Cle de signature Mailgun",
+      "mandrillApiKey": "Cle API Mandrill"
+    },
+    "placeholders": {
+      "password": "Entrez le nouveau mot de passe d'ingestion",
+      "domain": "reply.example.com",
+      "mailgunSigningKey": "Entrez la nouvelle cle de signature Mailgun",
+      "mandrillApiKey": "Entrez la nouvelle cle API Mandrill"
+    },
+    "validation": {
+      "domainRequired": "Le domaine d'e-mail entrant est requis"
+    },
+    "secretConfigured": "Configure",
+    "secretNotConfigured": "Non configure",
+    "clearSecret": "Effacer la valeur enregistree",
+    "messages": {
+      "saveSuccess": "Configuration d'e-mail entrant enregistree avec succes",
+      "saveError": "Echec de l'enregistrement de la configuration d'e-mail entrant",
+      "loadError": "Echec du chargement de la configuration d'e-mail entrant"
+    },
+    "save": "Enregistrer la Configuration",
+    "saving": "Enregistrement..."
   }
 }

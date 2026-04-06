@@ -77,6 +77,7 @@ const SocialLoginConfig = React.lazy(() => import('@/pages/Admin/Settings/Social
 const ChannelConfig = React.lazy(() => import('@/pages/Admin/Settings/ChannelConfig'));
 const OpenAIConfig = React.lazy(() => import('@/pages/Admin/Settings/OpenAIConfig'));
 const IntegrationsConfig = React.lazy(() => import('@/pages/Admin/Settings/IntegrationsConfig'));
+const InboundEmailConfig = React.lazy(() => import('@/pages/Admin/Settings/InboundEmailConfig'));
 
 // Páginas compartilhadas
 import Documentation from '@/pages/Shared/Documentation';
@@ -1178,6 +1179,14 @@ const AppRouter = () => {
               element={
                 <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
                   <IntegrationsConfig />
+                </Suspense>
+              }
+            />
+            <Route
+              path="inbound-email"
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <InboundEmailConfig />
                 </Suspense>
               }
             />

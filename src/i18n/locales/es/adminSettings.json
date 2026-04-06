@@ -7,7 +7,8 @@
     "socialLogin": "Inicio de Sesion Social",
     "channels": "Canales",
     "openai": "OpenAI",
-    "integrations": "Integraciones"
+    "integrations": "Integraciones",
+    "inboundEmail": "Correo Entrante"
   },
   "email": {
     "title": "Configuracion de Correo Electronico",
@@ -389,5 +390,41 @@
     "messages": {
       "loadError": "Error al cargar la configuracion de integraciones"
     }
+  },
+  "inboundEmail": {
+    "title": "Configuracion de Correo Entrante",
+    "description": "Configure el proveedor de correo entrante y las credenciales utilizadas para recibir y procesar correos electronicos entrantes.",
+    "provider": {
+      "label": "Servicio de Correo Entrante",
+      "relay": "Relay (Exim / Postfix / Qmail)",
+      "mailgun": "Mailgun",
+      "mandrill": "Mandrill",
+      "sendgrid": "SendGrid"
+    },
+    "fields": {
+      "password": "Contrasena de Ingreso",
+      "domain": "Dominio de Correo Entrante",
+      "mailgunSigningKey": "Clave de Firma Mailgun",
+      "mandrillApiKey": "Clave de API Mandrill"
+    },
+    "placeholders": {
+      "password": "Ingrese la nueva contrasena de ingreso",
+      "domain": "reply.example.com",
+      "mailgunSigningKey": "Ingrese la nueva clave de firma Mailgun",
+      "mandrillApiKey": "Ingrese la nueva clave de API Mandrill"
+    },
+    "validation": {
+      "domainRequired": "El dominio de correo entrante es obligatorio"
+    },
+    "secretConfigured": "Configurado",
+    "secretNotConfigured": "No configurado",
+    "clearSecret": "Borrar valor guardado",
+    "messages": {
+      "saveSuccess": "Configuracion de correo entrante guardada exitosamente",
+      "saveError": "Error al guardar la configuracion de correo entrante",
+      "loadError": "Error al cargar la configuracion de correo entrante"
+    },
+    "save": "Guardar Configuracion",
+    "saving": "Guardando..."
   }
 }

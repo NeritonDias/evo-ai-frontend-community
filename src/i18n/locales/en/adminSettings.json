@@ -7,7 +7,8 @@
     "socialLogin": "Social Login",
     "channels": "Channels",
     "openai": "OpenAI",
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "inboundEmail": "Inbound Email"
   },
   "email": {
     "title": "Email Configuration",
@@ -413,5 +414,41 @@
     "messages": {
       "loadError": "Failed to load integrations configuration"
     }
+  },
+  "inboundEmail": {
+    "title": "Inbound Email Configuration",
+    "description": "Configure the inbound email provider and credentials used for receiving and processing incoming emails.",
+    "provider": {
+      "label": "Inbound Email Service",
+      "relay": "Relay (Exim / Postfix / Qmail)",
+      "mailgun": "Mailgun",
+      "mandrill": "Mandrill",
+      "sendgrid": "SendGrid"
+    },
+    "fields": {
+      "password": "Ingress Password",
+      "domain": "Inbound Email Domain",
+      "mailgunSigningKey": "Mailgun Signing Key",
+      "mandrillApiKey": "Mandrill API Key"
+    },
+    "placeholders": {
+      "password": "Enter new ingress password",
+      "domain": "reply.example.com",
+      "mailgunSigningKey": "Enter new Mailgun signing key",
+      "mandrillApiKey": "Enter new Mandrill API key"
+    },
+    "validation": {
+      "domainRequired": "Inbound email domain is required"
+    },
+    "secretConfigured": "Configured",
+    "secretNotConfigured": "Not configured",
+    "clearSecret": "Clear saved value",
+    "messages": {
+      "saveSuccess": "Inbound email configuration saved successfully",
+      "saveError": "Failed to save inbound email configuration",
+      "loadError": "Failed to load inbound email configuration"
+    },
+    "save": "Save Configuration",
+    "saving": "Saving..."
   }
 }
