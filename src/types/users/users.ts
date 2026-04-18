@@ -90,7 +90,7 @@ export interface UserFormData {
   name: string;
   email: string;
   availability: 'online' | 'busy' | 'offline';
-  role?: string;
+  role: string;
   avatar?: File;
   removeAvatar?: boolean;
   password?: string;

@@ -66,7 +66,7 @@ export default function UserFormModal({ isOpen, onClose, user, onSuccess }: User
       });
     }
     setErrors({});
-  }, [user]);
+  }, [user, isOpen]);
 
   const handleFieldChange = (field: keyof UserFormData, value: string) => {
     setFormData(prev => ({
@@ -213,12 +213,12 @@ export default function UserFormModal({ isOpen, onClose, user, onSuccess }: User
           <div className="space-y-2">
             <Label htmlFor="role">{t('form.fields.role.label')}</Label>
             <Select
-              value={formData.role}
+              value={formData.role || ''}
               onValueChange={value => handleFieldChange('role', value)}
               disabled={loading}
             >
               <SelectTrigger className="bg-sidebar border-sidebar-border text-sidebar-foreground">
-                <SelectValue />
+                <SelectValue placeholder={t('form.fields.role.placeholder')} />
               </SelectTrigger>
               <SelectContent>
                 {systemRoles.map(role => (
