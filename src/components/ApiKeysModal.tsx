@@ -18,10 +18,12 @@ import {
   Badge,
   Checkbox,
 } from '@evoapi/design-system';
-import { Edit, Eye, Key, Plus, Trash2, X, Loader2 } from 'lucide-react';
+import { Edit, Eye, ExternalLink, Key, Plus, Trash2, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiKey, ApiKeyCreate, ApiKeyUpdate } from '@/types/agents';
 import { createApiKey, listApiKeys, updateApiKey, deleteApiKey } from '@/services/agents';
+import { OAuthDeviceCodeFlow } from '@/components/agents/OAuthDeviceCodeFlow';
+import { OAuthStatusBadge } from '@/components/agents/OAuthStatusBadge';
 
 interface ApiKeysModalProps {
   open: boolean;
@@ -30,10 +32,12 @@ interface ApiKeysModalProps {
 }
 
 const CUSTOM_OPENAI_PROVIDER = 'custom_openai_compatible';
+const OAUTH_CODEX_PROVIDER = 'openai-codex';
 
 // Providers disponíveis
 const availableProviders = [
   { value: 'openai', label: 'OpenAI' },
+  { value: OAUTH_CODEX_PROVIDER, label: 'ChatGPT (OAuth)' },
   { value: 'anthropic', label: 'Anthropic' },
   { value: 'gemini', label: 'Google Gemini' },
   { value: 'azure', label: 'Azure OpenAI' },
@@ -62,10 +66,22 @@ export function ApiKeysModal({ open, onOpenChange, onApiKeysChange }: ApiKeysMod
   const [keyToDelete, setKeyToDelete] = useState<ApiKey | null>(null);
   const [isKeyVisible, setIsKeyVisible] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showOAuthFlow, setShowOAuthFlow] = useState(false);
 
   const getProviderLabel = (providerValue: string) => {
     return availableProviders.find(provider => provider.value === providerValue)?.label || providerValue;
   };
+
+  // Derive clientId from the first available API key or use a default
+  const getClientId = useCallback(() => {
+    if (apiKeys.length > 0 && apiKeys[0].id) {
+      // Use the client_id pattern from existing keys if available
+      return apiKeys[0].id.split('-').slice(0, 5).join('-');
+    }
+    return 'default';
+  }, [apiKeys]);
+
+  const isOAuthCodexProvider = currentApiKey.provider === OAUTH_CODEX_PROVIDER;
 
   const loadApiKeys = useCallback(async () => {
     try {
@@ -90,12 +106,14 @@ export function ApiKeysModal({ open, onOpenChange, onApiKeysChange }: ApiKeysMod
     setCurrentApiKey({});
     setIsAddingKey(true);
     setIsEditingKey(false);
+    setShowOAuthFlow(false);
   };
 
   const handleEditClick = (apiKey: ApiKey) => {
     setCurrentApiKey({ ...apiKey, key_value: '' });
     setIsAddingKey(true);
     setIsEditingKey(true);
+    setShowOAuthFlow(false);
   };
 
   const handleDeleteClick = (apiKey: ApiKey) => {
@@ -110,9 +128,19 @@ export function ApiKeysModal({ open, onOpenChange, onApiKeysChange }: ApiKeysMod
       !currentApiKey.name ||
       !currentApiKey.provider ||
       (isCustomProvider && !currentApiKey.base_url?.trim()) ||
-      (!isCustomProvider && !isEditingKey && !currentApiKey.key_value)
+      (!isCustomProvider && !isOAuthCodexProvider && !isEditingKey && !currentApiKey.key_value)
     ) {
       toast.error(t('messages.requiredFields'));
+      return;
+    }
+
+    // For OAuth Codex, the key is created via the OAuth flow, not the standard save
+    if (isOAuthCodexProvider && !isEditingKey) {
+      if (!currentApiKey.name) {
+        toast.error(t('messages.requiredFields'));
+        return;
+      }
+      setShowOAuthFlow(true);
       return;
     }
 
@@ -187,6 +215,18 @@ export function ApiKeysModal({ open, onOpenChange, onApiKeysChange }: ApiKeysMod
     }
   };
 
+  const handleOAuthSuccess = (_keyId: string) => {
+    setShowOAuthFlow(false);
+    setIsAddingKey(false);
+    setCurrentApiKey({});
+    toast.success(t('messages.createSuccess'));
+    loadApiKeys();
+
+    if (onApiKeysChange) {
+      onApiKeysChange();
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,145 +252,203 @@ export function ApiKeysModal({ open, onOpenChange, onApiKeysChange }: ApiKeysMod
                       setIsAddingKey(false);
                       setIsEditingKey(false);
                       setCurrentApiKey({});
+                      setShowOAuthFlow(false);
                     }}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name">{t('form.labels.name')}</Label>
-                    <Input
-                      id="name"
-                      value={currentApiKey.name || ''}
-                      onChange={e =>
-                        setCurrentApiKey({
-                          ...currentApiKey,
-                          name: e.target.value,
-                        })
-                      }
-                      className="col-span-3"
-                      placeholder={t('form.placeholders.name')}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="provider">{t('form.labels.provider')}</Label>
-                    <Select
-                      value={currentApiKey.provider}
-                      onValueChange={value =>
-                        setCurrentApiKey({
-                          ...currentApiKey,
-                          provider: value,
-                          ...(value !== CUSTOM_OPENAI_PROVIDER ? { base_url: '' } : {}),
-                        })
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder={t('form.placeholders.provider')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableProviders.map(provider => (
-                          <SelectItem key={provider.value} value={provider.value}>
-                            {provider.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {currentApiKey.provider === CUSTOM_OPENAI_PROVIDER && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="base_url">Base URL</Label>
-                      <Input
-                        id="base_url"
-                        value={currentApiKey.base_url || ''}
-                        onChange={e =>
-                          setCurrentApiKey({
-                            ...currentApiKey,
-                            base_url: e.target.value,
-                          })
-                        }
-                        className="col-span-3"
-                        placeholder="https://api.example.com/v1"
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="key_value">
-                      {t('form.labels.key')}
-                      {currentApiKey.provider !== CUSTOM_OPENAI_PROVIDER && (
-                        <span className="text-red-500 ml-1">*</span>
-                      )}
-                    </Label>
-                    <div className="col-span-3 relative">
-                      <Input
-                        id="key_value"
-                        value={currentApiKey.key_value || ''}
-                        onChange={e =>
-                          setCurrentApiKey({
-                            ...currentApiKey,
-                            key_value: e.target.value,
-                          })
-                        }
-                        className="pr-10"
-                        type={isKeyVisible ? 'text' : 'password'}
-                        placeholder={
-                          isEditingKey
-                            ? t('form.placeholders.keyEdit')
-                            : t('form.placeholders.keyNew')
-                        }
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        type="button"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-                        onClick={() => setIsKeyVisible(!isKeyVisible)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {isEditingKey && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="is_active">{t('form.labels.status')}</Label>
-                      <div className="col-span-3 flex items-center space-x-2">
-                        <Checkbox
-                          id="is_active"
-                          checked={currentApiKey.is_active !== false}
-                          onCheckedChange={checked =>
+                {showOAuthFlow ? (
+                  <OAuthDeviceCodeFlow
+                    clientId={getClientId()}
+                    name={currentApiKey.name || 'ChatGPT OAuth'}
+                    onSuccess={handleOAuthSuccess}
+                    onCancel={() => setShowOAuthFlow(false)}
+                  />
+                ) : (
+                  <>
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name">{t('form.labels.name')}</Label>
+                        <Input
+                          id="name"
+                          value={currentApiKey.name || ''}
+                          onChange={e =>
                             setCurrentApiKey({
                               ...currentApiKey,
-                              is_active: !!checked,
+                              name: e.target.value,
                             })
                           }
+                          className="col-span-3"
+                          placeholder={t('form.placeholders.name')}
                         />
-                        <Label htmlFor="is_active">{t('form.labels.active')}</Label>
                       </div>
-                    </div>
-                  )}
-                </div>
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddingKey(false);
-                      setIsEditingKey(false);
-                      setCurrentApiKey({});
-                    }}
-                  >
-                    {t('actions.cancel')}
-                  </Button>
-                  <Button onClick={handleSaveApiKey} disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isEditingKey ? t('actions.update') : t('actions.save')}
-                  </Button>
-                </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="provider">{t('form.labels.provider')}</Label>
+                        <Select
+                          value={currentApiKey.provider}
+                          onValueChange={value =>
+                            setCurrentApiKey({
+                              ...currentApiKey,
+                              provider: value,
+                              ...(value !== CUSTOM_OPENAI_PROVIDER ? { base_url: '' } : {}),
+                            })
+                          }
+                        >
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder={t('form.placeholders.provider')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableProviders.map(provider => (
+                              <SelectItem key={provider.value} value={provider.value}>
+                                {provider.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {currentApiKey.provider === CUSTOM_OPENAI_PROVIDER && (
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="base_url">Base URL</Label>
+                          <Input
+                            id="base_url"
+                            value={currentApiKey.base_url || ''}
+                            onChange={e =>
+                              setCurrentApiKey({
+                                ...currentApiKey,
+                                base_url: e.target.value,
+                              })
+                            }
+                            className="col-span-3"
+                            placeholder="https://api.example.com/v1"
+                          />
+                        </div>
+                      )}
+
+                      {isOAuthCodexProvider ? (
+                        /* OAuth Codex flow - no key_value needed */
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label>Auth</Label>
+                          <div className="col-span-3">
+                            {isEditingKey && currentApiKey.auth_type === 'oauth_codex' ? (
+                              <Button
+                                onClick={() => {
+                                  if (!currentApiKey.name) {
+                                    toast.error(t('messages.requiredFields'));
+                                    return;
+                                  }
+                                  setShowOAuthFlow(true);
+                                }}
+                                variant="outline"
+                                className="w-full"
+                              >
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                Reconnect with ChatGPT
+                              </Button>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                After entering a name, click the button below to connect via OAuth.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="key_value">
+                            {t('form.labels.key')}
+                            {currentApiKey.provider !== CUSTOM_OPENAI_PROVIDER && (
+                              <span className="text-red-500 ml-1">*</span>
+                            )}
+                          </Label>
+                          <div className="col-span-3 relative">
+                            <Input
+                              id="key_value"
+                              value={currentApiKey.key_value || ''}
+                              onChange={e =>
+                                setCurrentApiKey({
+                                  ...currentApiKey,
+                                  key_value: e.target.value,
+                                })
+                              }
+                              className="pr-10"
+                              type={isKeyVisible ? 'text' : 'password'}
+                              placeholder={
+                                isEditingKey
+                                  ? t('form.placeholders.keyEdit')
+                                  : t('form.placeholders.keyNew')
+                              }
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                              onClick={() => setIsKeyVisible(!isKeyVisible)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {isEditingKey && (
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="is_active">{t('form.labels.status')}</Label>
+                          <div className="col-span-3 flex items-center space-x-2">
+                            <Checkbox
+                              id="is_active"
+                              checked={currentApiKey.is_active !== false}
+                              onCheckedChange={checked =>
+                                setCurrentApiKey({
+                                  ...currentApiKey,
+                                  is_active: !!checked,
+                                })
+                              }
+                            />
+                            <Label htmlFor="is_active">{t('form.labels.active')}</Label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsAddingKey(false);
+                          setIsEditingKey(false);
+                          setCurrentApiKey({});
+                          setShowOAuthFlow(false);
+                        }}
+                      >
+                        {t('actions.cancel')}
+                      </Button>
+                      {isOAuthCodexProvider && !isEditingKey ? (
+                        <Button
+                          onClick={() => {
+                            if (!currentApiKey.name) {
+                              toast.error(t('messages.requiredFields'));
+                              return;
+                            }
+                            setShowOAuthFlow(true);
+                          }}
+                          disabled={loading}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Connect with ChatGPT
+                        </Button>
+                      ) : (
+                        <Button onClick={handleSaveApiKey} disabled={loading}>
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {isEditingKey ? t('actions.update') : t('actions.save')}
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <>
@@ -382,9 +480,13 @@ export function ApiKeysModal({ open, onOpenChange, onApiKeysChange }: ApiKeysMod
                               </span>
                             )}
                             <Badge variant="outline">{getProviderLabel(apiKey.provider)}</Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {t('list.createdAt')} {new Date(apiKey.created_at).toLocaleDateString('pt-BR')}
-                            </span>
+                            {apiKey.auth_type === 'oauth_codex' ? (
+                              <OAuthStatusBadge keyId={apiKey.id} clientId={getClientId()} />
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                {t('list.createdAt')} {new Date(apiKey.created_at).toLocaleDateString('pt-BR')}
+                              </span>
+                            )}
                             {!apiKey.is_active && <Badge variant="destructive">{t('list.inactive')}</Badge>}
                           </div>
                         </div>

@@ -66,7 +66,7 @@ export interface AgentConfig {
 
   // Integrations config
   integrations?: Record<string, any>;
-  
+
   // External agent config
   provider?: string; // Provider name: flowise, n8n, typebot, dify, openai
 
@@ -133,6 +133,8 @@ export interface ApiKey {
   created_at: string;
   updated_at: string;
   is_active: boolean;
+  auth_type?: string;          // "api_key" or "oauth_codex"
+  oauth_connected?: boolean;   // computed field from backend
 }
 
 export interface ApiKeyCreate {

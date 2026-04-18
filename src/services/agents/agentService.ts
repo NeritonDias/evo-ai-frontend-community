@@ -14,6 +14,11 @@ import {
   ApiKeyModelsResponse,
   AgentListResponse,
 } from '@/types/agents';
+import type {
+  OAuthDeviceCodeResponse,
+  OAuthPollResponse,
+  OAuthStatusResponse,
+} from '@/types/agents/oauth';
 import { processAgentData } from '@/utils/agentUtils';
 import { extractData, buildPaginationParams, extractResponse } from '@/utils/apiHelpers';
 
@@ -135,6 +140,36 @@ class AgentsService {
     return extractData<ApiKeyModelsResponse>(response);
   }
 
+  // --- OAuth Codex API methods ---
+
+  async initiateOAuthDeviceCode(clientId: string, name: string): Promise<OAuthDeviceCodeResponse> {
+    const response = await evoaiApi.post('/agents/oauth/codex/device-code', {
+      client_id: clientId,
+      name,
+    });
+    return extractData<OAuthDeviceCodeResponse>(response);
+  }
+
+  async pollOAuthDeviceCode(keyId: string): Promise<OAuthPollResponse> {
+    const response = await evoaiApi.post('/agents/oauth/codex/device-poll', {
+      key_id: keyId,
+    });
+    return extractData<OAuthPollResponse>(response);
+  }
+
+  async getOAuthStatus(keyId: string, clientId: string): Promise<OAuthStatusResponse> {
+    const response = await evoaiApi.get(`/agents/oauth/codex/status/${keyId}`, {
+      headers: { 'x-client-id': clientId },
+    });
+    return extractData<OAuthStatusResponse>(response);
+  }
+
+  async revokeOAuth(keyId: string, clientId: string): Promise<void> {
+    await evoaiApi.delete(`/agents/oauth/codex/${keyId}`, {
+      headers: { 'x-client-id': clientId },
+    });
+  }
+
   // Helper methods for backward compatibility
   async getAccessibleFolders(page = 1, pageSize = 100) {
     const folders = await this.listFolders(page, pageSize);
@@ -181,3 +216,9 @@ export const getAccessibleFolders = (page?: number, pageSize?: number) => agents
 export const getAccessibleAgents = (page?: number, pageSize?: number) => agentsService.getAccessibleAgents(page, pageSize);
 export const shareAgent = (agentId: string) => agentsService.shareAgent(agentId);
 export const getAgentIntegrations = (agentId: string) => agentsService.getAgentIntegrations(agentId);
+
+// OAuth Codex exports
+export const initiateOAuthDeviceCode = (clientId: string, name: string) => agentsService.initiateOAuthDeviceCode(clientId, name);
+export const pollOAuthDeviceCode = (keyId: string) => agentsService.pollOAuthDeviceCode(keyId);
+export const getOAuthStatus = (keyId: string, clientId: string) => agentsService.getOAuthStatus(keyId, clientId);
+export const revokeOAuth = (keyId: string, clientId: string) => agentsService.revokeOAuth(keyId, clientId);

@@ -109,6 +109,17 @@ export const availableModels = [
   { value: 'vertex_ai/chat-bison-32k', label: 'Chat Bison 32K (Vertex)', provider: 'vertex_ai' },
   { value: 'vertex_ai/codechat-bison', label: 'CodeChat Bison (Vertex)', provider: 'vertex_ai' },
   { value: 'vertex_ai/code-bison', label: 'Code Bison (Vertex)', provider: 'vertex_ai' },
+  // ChatGPT OAuth Codex models (subscription-based, no API key needed)
+  { value: 'chatgpt/gpt-5.4', label: 'GPT-5.4', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.4-pro', label: 'GPT-5.4 Pro', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.3-codex', label: 'GPT-5.3 Codex', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.3-codex-spark', label: 'GPT-5.3 Codex Spark', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.3-instant', label: 'GPT-5.3 Instant', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.3-chat-latest', label: 'GPT-5.3 Chat Latest', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.2-codex', label: 'GPT-5.2 Codex', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.2', label: 'GPT-5.2', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.1-codex-max', label: 'GPT-5.1 Codex Max', provider: 'openai-codex' },
+  { value: 'chatgpt/gpt-5.1-codex-mini', label: 'GPT-5.1 Codex Mini', provider: 'openai-codex' },
 ];
 
 export interface ModelSelectorProps {
