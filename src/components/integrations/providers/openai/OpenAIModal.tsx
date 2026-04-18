@@ -10,10 +10,17 @@ import {
   Input,
   Card,
   Switch,
-  Label
+  Label,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent
 } from '@evoapi/design-system';
 import { Brain, AlertCircle, ExternalLink } from 'lucide-react';
 import { OpenAIHook, OpenAIFormData, IntegrationHook } from '@/types/integrations';
+import OAuthDeviceCodeFlow from '@/components/agents/OAuthDeviceCodeFlow';
+import OAuthStatusBadge from '@/components/agents/OAuthStatusBadge';
+import { useAuthStore } from '@/store/authStore';
 
 interface OpenAIModalProps {
   hook?: IntegrationHook;
@@ -34,9 +41,11 @@ export default function OpenAIModal({
 }: OpenAIModalProps) {
   const { t } = useLanguage('integrations');
   const [loading, setLoading] = useState(false);
+  const { clientId } = useAuthStore();
   const [formData, setFormData] = useState<OpenAIFormData>({
     api_key: '',
-    enable_audio_transcription: false
+    enable_audio_transcription: false,
+    auth_method: 'api_key'
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -46,12 +55,15 @@ export default function OpenAIModal({
     if (openaiHook?.settings) {
       setFormData({
         api_key: openaiHook.settings.api_key || '',
-        enable_audio_transcription: openaiHook.settings.enable_audio_transcription || false
+        enable_audio_transcription: openaiHook.settings.enable_audio_transcription || false,
+        auth_method: (openaiHook.settings as any).auth_method || 'api_key',
+        oauth_key_id: (openaiHook.settings as any).oauth_key_id
       });
     } else {
       setFormData({
         api_key: '',
-        enable_audio_transcription: false
+        enable_audio_transcription: false,
+        auth_method: 'api_key'
       });
     }
     setErrors({});
@@ -60,10 +72,12 @@ export default function OpenAIModal({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.api_key.trim()) {
-      newErrors.api_key = t('openai.modal.fields.apiKey.required');
-    } else if (!formData.api_key.startsWith('sk-')) {
-      newErrors.api_key = t('openai.modal.fields.apiKey.invalid');
+    if (formData.auth_method !== 'oauth') {
+      if (!formData.api_key.trim()) {
+        newErrors.api_key = t('openai.modal.fields.apiKey.required');
+      } else if (!formData.api_key.startsWith('sk-')) {
+        newErrors.api_key = t('openai.modal.fields.apiKey.invalid');
+      }
     }
 
     setErrors(newErrors);
@@ -105,43 +119,65 @@ export default function OpenAIModal({
           <Card className="p-4">
             <h4 className="font-semibold mb-4">{t('openai.modal.apiConfig')}</h4>
 
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="api_key" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('openai.modal.fields.apiKey.label')} *
-                </label>
-                <Input
-                  id="api_key"
-                  type="password"
-                  placeholder={t('openai.modal.fields.apiKey.placeholder')}
-                  value={formData.api_key}
-                  onChange={(e) => setFormData(prev => ({ ...prev, api_key: e.target.value }))}
-                  className={errors.api_key ? 'border-red-500' : ''}
-                />
-                {errors.api_key && (
-                  <p className="text-sm text-red-600 mt-1">{errors.api_key}</p>
-                )}
+            <Tabs value={formData.auth_method || 'api_key'} onValueChange={(v) => setFormData(prev => ({...prev, auth_method: v as 'api_key' | 'oauth'}))}>
+              <TabsList>
+                <TabsTrigger value="api_key">API Key</TabsTrigger>
+                <TabsTrigger value="oauth">OAuth (ChatGPT)</TabsTrigger>
+              </TabsList>
+              <TabsContent value="api_key">
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <label htmlFor="api_key" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {t('openai.modal.fields.apiKey.label')} *
+                    </label>
+                    <Input
+                      id="api_key"
+                      type="password"
+                      placeholder={t('openai.modal.fields.apiKey.placeholder')}
+                      value={formData.api_key}
+                      onChange={(e) => setFormData(prev => ({ ...prev, api_key: e.target.value }))}
+                      className={errors.api_key ? 'border-red-500' : ''}
+                    />
+                    {errors.api_key && (
+                      <p className="text-sm text-red-600 mt-1">{errors.api_key}</p>
+                    )}
+                    <p className="text-xs text-slate-500 mt-1">
+                      {t('openai.modal.fields.apiKey.hint')}
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="oauth">
+                <div className="space-y-4 mt-4">
+                  {formData.oauth_key_id ? (
+                    <OAuthStatusBadge keyId={formData.oauth_key_id} clientId={clientId} />
+                  ) : (
+                    <OAuthDeviceCodeFlow
+                      clientId={clientId}
+                      name="OpenAI Integration"
+                      onSuccess={(keyId) => setFormData(prev => ({...prev, oauth_key_id: keyId}))}
+                      onCancel={() => {}}
+                    />
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            {/* Audio Transcription Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 mt-4">
+              <div className="flex-1">
+                <Label htmlFor="enable_audio_transcription" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {t('openai.modal.fields.enableAudioTranscription.label')}
+                </Label>
                 <p className="text-xs text-slate-500 mt-1">
-                  {t('openai.modal.fields.apiKey.hint')}
+                  {t('openai.modal.fields.enableAudioTranscription.description')}
                 </p>
               </div>
-
-              {/* Audio Transcription Toggle */}
-              <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                <div className="flex-1">
-                  <Label htmlFor="enable_audio_transcription" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    {t('openai.modal.fields.enableAudioTranscription.label')}
-                  </Label>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {t('openai.modal.fields.enableAudioTranscription.description')}
-                  </p>
-                </div>
-                <Switch
-                  id="enable_audio_transcription"
-                  checked={formData.enable_audio_transcription || false}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_audio_transcription: checked }))}
-                />
-              </div>
+              <Switch
+                id="enable_audio_transcription"
+                checked={formData.enable_audio_transcription || false}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_audio_transcription: checked }))}
+              />
             </div>
           </Card>
 
